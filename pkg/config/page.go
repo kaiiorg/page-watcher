@@ -14,6 +14,12 @@ type Page struct {
 	Url string `hcl:"url"`
 	// Every is a string duration for how often to check the Url. Rounded to nearest second, min 5s, default 1m
 	Every string `hcl:"every"`
+
+	// Find is a string slice for the arguments to soup's Root.Find(). See https://pkg.go.dev/github.com/anaskhan96/soup#Root.Find
+	Find []string `hcl:"find"`
+
+	// Debug will write the page to files to help with configuration
+	Debug bool `hcl:"debug,optional"`
 }
 
 func (p *Page) EveryDuration() time.Duration {

@@ -2,6 +2,8 @@ package watcher
 
 import (
 	"context"
+	"github.com/kaiiorg/page-watcher/pkg/watcher/normalizer"
+	"github.com/rs/zerolog"
 	"sync"
 	"time"
 
@@ -15,11 +17,14 @@ type Watcher struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	wg        sync.WaitGroup
+
+	normalizer normalizer.Normalizer
 }
 
 func New(config *config.Config) *Watcher {
 	w := &Watcher{
-		config: config,
+		config:     config,
+		normalizer: normalizer.New(),
 	}
 	w.ctx, w.ctxCancel = context.WithCancel(context.Background())
 
@@ -51,5 +56,15 @@ func (w *Watcher) watchPage(page *config.Page) {
 		return
 	case <-ticker.C:
 		log.Info().Msg("Checking")
+		w.check(page, log)
 	}
+}
+
+func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
+	normalizedPage, err := w.normalizer.Get(page)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get and normalize page")
+	}
+
+	log.Info().Int("length", len(normalizedPage)).Msg("Got and normalized page")
 }
