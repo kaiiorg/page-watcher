@@ -12,8 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type PageNormalizer struct {
-}
+type PageNormalizer struct{}
 
 func New() *PageNormalizer {
 	return &PageNormalizer{}
@@ -31,17 +30,14 @@ func (pn *PageNormalizer) Get(page *config.Page) (string, error) {
 		return "", content.Error
 	}
 
-	normalized := pn.normalize(content.FullText())
+	// Run user defined normalization regexp
+	normalized := page.NormalizeString(content.FullText())
 
 	if page.Debug {
 		pn.debug(page.Name, resp, normalized)
 	}
 
 	return normalized, nil
-}
-
-func (pn *PageNormalizer) normalize(s string) string {
-	return s
 }
 
 func (pn *PageNormalizer) debug(name, raw, normalized string) {
@@ -52,7 +48,7 @@ func (pn *PageNormalizer) debug(name, raw, normalized string) {
 	normalizedFileName := fmt.Sprintf("normalized.%s.txt", name)
 
 	err := os.WriteFile(
-		filepath.Join(".", rawFileName),
+		filepath.Join(".", "debug", rawFileName),
 		[]byte(raw),
 		0777,
 	)
@@ -61,7 +57,7 @@ func (pn *PageNormalizer) debug(name, raw, normalized string) {
 	}
 
 	err = os.WriteFile(
-		filepath.Join(".", normalizedFileName),
+		filepath.Join(".", "debug", normalizedFileName),
 		[]byte(normalized),
 		0777,
 	)

@@ -16,5 +16,21 @@ func LoadFromFile(filepath string) (*Config, error) {
 		return nil, err
 	}
 
+	err = config.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	return config, nil
+}
+
+// Validate performs validation work on configuration
+func (c *Config) Validate() error {
+	for _, p := range c.Pages {
+		err := p.ValidateNormalize()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
