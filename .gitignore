@@ -4,3 +4,5 @@ protoc/
 
 # Ignoring my dev config because it will contain secrets I don't want checked into git. See configs/example.config.hcl for an example
 configs/config.hcl
+
+debug/
