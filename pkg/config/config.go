@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	DB    *DB     `hcl:"db,block"`
 	Pages []*Page `hcl:"page,block"`
 }
 
@@ -26,6 +27,10 @@ func LoadFromFile(filepath string) (*Config, error) {
 
 // Validate performs validation work on configuration
 func (c *Config) Validate() error {
+	if c.DB == nil {
+		c.DB = defaultDb()
+	}
+
 	for _, p := range c.Pages {
 		err := p.ValidateNormalize()
 		if err != nil {

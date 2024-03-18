@@ -32,7 +32,12 @@ func main() {
 
 	log.Info().Int("pages", len(conf.Pages)).Msg("Loaded configuration")
 
-	watcher := watcher.New(conf)
+	watcher, err := watcher.New(conf)
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("Failed to create watcher")
+	}
 
 	watcher.Watch()
 	util.WaitForInterrupt()
