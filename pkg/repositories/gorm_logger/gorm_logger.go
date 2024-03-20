@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm/logger"
 )
 
@@ -62,7 +61,7 @@ func (gl GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 
-	log.Debug().
+	gl.log.Debug().
 		Err(err).
 		Dur("elapsed", elapsed).
 		Int64("rows", rows).

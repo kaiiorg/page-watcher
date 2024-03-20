@@ -13,6 +13,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"gorm.io/gorm"
 )
 
@@ -100,9 +101,34 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 		}
 	}
 
-	log.Warn().Uint("id", dbPage.ID).Msg("Found an existing page, but doing anything with it isn't implemented yet")
-	// TODO perform diff here to determine if the page is different
-	// TODO if the page is not different, stop now
-	// TODO if the page is different, add it to the database
+	// Determine if there are differences and format it into a human-readable diff if soo
+	diff, isDiff := w.diff(normalizedPage, dbPage.Text, page, log)
+
+	// If the page is not different, stop now
+	if !isDiff {
+		log.Info().Msg("No differences found!")
+		return
+	}
+
+	// If the page is different, add it to the database
+	newDbPage := &models.Page{
+		Name: dbPage.Name,
+		Text: normalizedPage,
+		Diff: diff,
+	}
+	err = w.pageRepository.SaveChange(newDbPage)
+	if err != nil {
+		log.Error().Err(err).Msg("A difference was found, but failed to save it to the database!")
+		return
+	}
+	log.Info().Msg("Found differences; saved them to the database")
+
 	// TODO send discord notifications informing about the change
+	log.Warn().Msg("Differences were found, but notifications are currently unsupported")
+}
+
+func (w *Watcher) diff(newPage, currentPage string, pageConfig *config.Page, log zerolog.Logger) (string, bool) {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(newPage, currentPage, false)
+	return dmp.DiffPrettyHtml(diffs), true
 }

@@ -2,6 +2,7 @@ package page_repository
 
 import (
 	"errors"
+	"flag"
 
 	"github.com/kaiiorg/page-watcher/pkg/config"
 	"github.com/kaiiorg/page-watcher/pkg/models"
@@ -13,16 +14,26 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	dbLogLevel = flag.String("db-log-level", "info", "Zerolog log level to use for db related logging; trace, debug, info, warn, error, panic, etc")
+)
+
 type SqlitePageRepository struct {
 	config *config.DB
 	db     *gorm.DB
 }
 
 func NewSqlitePageRepository(dbConfig *config.DB) (*SqlitePageRepository, error) {
+	dbLevel, err := zerolog.ParseLevel(*dbLogLevel)
+	if err != nil {
+		log.Warn().Str("levelStr", *dbLogLevel).Msg("Given invalid log level for database; defaulting to info level")
+		dbLevel = zerolog.InfoLevel
+	}
+
 	db, err := gorm.Open(
 		sqlite.Open(dbConfig.Path),
 		&gorm.Config{
-			Logger: gorm_logger.NewGormLogger(log.With().Str("component", "db-gorm").Logger(), zerolog.GlobalLevel()),
+			Logger: gorm_logger.NewGormLogger(log.With().Str("component", "db-gorm").Logger().Level(dbLevel), dbLevel),
 		},
 	)
 	if err != nil {
@@ -52,7 +63,7 @@ func (spr *SqlitePageRepository) GetLatestChange(name string) (*models.Page, err
 }
 
 func (spr *SqlitePageRepository) SaveChange(page *models.Page) error {
-	err := spr.db.Save(page).Error
+	err := spr.db.Create(page).Error
 	if err != nil {
 		return err
 	}
@@ -60,13 +71,13 @@ func (spr *SqlitePageRepository) SaveChange(page *models.Page) error {
 	// Find the oldest record that we want to keep
 	oldestToKeep := &models.Page{}
 	err = spr.db.
-		Select("created_at").
+		Model(&models.Page{}).
 		Where("name = ?", page.Name).
 		Order("created_at DESC").
 		Limit(1).
 		Offset(spr.config.Retain). // newest record must always be kept + how many records the user wants us to keep
-		Row().
-		Scan(oldestToKeep)
+		First(oldestToKeep).
+		Error
 	if err != nil {
 		// If we didn't find one, then we're below the number of records we're configured to keep
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -77,9 +88,13 @@ func (spr *SqlitePageRepository) SaveChange(page *models.Page) error {
 	}
 
 	// Delete any record older than this record
-	err = spr.db.
+	deleteResult := spr.db.
 		Where("name = ? AND created_at < ?", page.Name, oldestToKeep.CreatedAt).
-		Delete(&models.Page{}).Error
+		Delete(&models.Page{})
+	log.Debug().
+		Str("oldestToKeepCreatedAt", oldestToKeep.CreatedAt.String()).
+		Int64("count", deleteResult.RowsAffected).
+		Msg("Deleted records older than this")
 
-	return err
+	return deleteResult.Error
 }

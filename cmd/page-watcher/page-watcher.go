@@ -21,6 +21,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	util.ConfigureLogging(*logLevel, applicationName, applicationDescription)
 	conf, err := config.LoadFromFile(*configPath)
 	if err != nil {
