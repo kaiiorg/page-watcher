@@ -1,28 +1,32 @@
-<head>
-  <link rel="stylesheet" type="text/css" href="/styles.css" />
-</head>
-<body>
-<h1>Page Change Watcher</h1>
-
-  {{if .pages}}
-    <h2>Stored Page Changes</h2>
-    <table>
-      <thead>
-      <tr>
-        <th>Configured Page Name</th>
-      </tr>
-      </thead>
-      <tbody>
-      {{range $key, $value := .pages}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+    <title>Page Watcher Index</title>
+  </head>
+  <body data-bs-theme="dark">
+    {{if .pages}}
+      <h1>Stored Page Changes</h1>
+      <table>
+        <thead>
         <tr>
-          <td>
-            <a href="/changes/{{$key}}">{{$value}}</a>
-          </td>
+          <th>Configured Page Name</th>
         </tr>
-      {{end}}
-      </tbody>
-    </table>
-  {{else}}
-    <p>Did not find any pages in the database!</p>
-  {{end}}
-</body>
+        </thead>
+        <tbody>
+        {{range $key, $value := .pages}}
+          <tr>
+            <td>
+              <a href="/changes/{{$key}}">{{$value}}</a>
+            </td>
+          </tr>
+        {{end}}
+        </tbody>
+      </table>
+    {{else}}
+      <p>Did not find any pages in the database!</p>
+    {{end}}
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

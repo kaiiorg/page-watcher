@@ -1,38 +1,64 @@
-<head>
-  <link rel="stylesheet" type="text/css" href="/styles.css" />
-</head>
-<body>
-<h1>Change For {{.page.Name}}</h1>
-<p>
-  Changed at {{.page.CreatedAt}}
-</p>
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+    <title>Page Change Details</title>
+  </head>
+  <body data-bs-theme="dark">
+    <h1>Change For {{.page.Name}}</h1>
+    <p>
+      Changed at {{.page.CreatedAt}}
+    </p>
 
-<h2>New Value (Normalized)</h2>
-<p>
-  {{range .lines}}
-    {{.}} <br>
-  {{end}}
-</p>
+    <div class="accordion" id="content">
+      <!-- Diff -->
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#diff" aria-expanded="true" aria-controls="diff">
+            Diff
+          </button>
+        </h2>
+        <div id="diff" class="accordion-collapse collapse show" data-bs-parent="#content">
+          <div class="accordion-body">
+              {{range .diff}}
+                  {{if isEqual .}}
+                    <span>
+                      {{.Text | replaceEndLines}}
+                    </span>
+                  {{end}}
+                  {{if isDel .}}
+                    <del class="link-danger">
+                        {{.Text | replaceEndLines}}
+                    </del>
+                  {{end}}
+                  {{if isInsert .}}
+                    <ins class="link-success">
+                        {{.Text | replaceEndLines}}
+                    </ins>
+                  {{end}}
+              {{end}}
+          </div>
+        </div>
+      </div>
 
-<h2>Diff</h2>
-<p>
-    {{range .diff}}
-      {{if isEqual .}}
-        <span>
-          {{.Text | replaceEndLines}}
-        </span>
-      {{end}}
-      {{if isDel .}}
-        <del class="diff-del">
-          {{.Text | replaceEndLines}}
-        </del>
-      {{end}}
-      {{if isInsert .}}
-        <ins class="diff-ins">
-          {{.Text | replaceEndLines}}
-        </ins>
-      {{end}}
-    {{end}}
-</p>
+      <!-- New Value -->
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#new" aria-expanded="false" aria-controls="new">
+            New Value (Normalized)
+          </button>
+        </h2>
+        <div id="new" class="accordion-collapse collapse" data-bs-parent="#content">
+          <div class="accordion-body">
+              {{range .lines}}
+                  {{.}} <br>
+              {{end}}
+          </div>
+        </div>
+      </div>
+    </div>
 
-</body>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
+
