@@ -2,18 +2,13 @@ package web
 
 import (
 	"embed"
-	"encoding/base64"
 	"fmt"
-	"html/template"
-	"net/http"
-	"strings"
-
-	"github.com/kaiiorg/page-watcher/pkg/config"
-	"github.com/kaiiorg/page-watcher/pkg/repositories/page_repository"
-
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/kaiiorg/page-watcher/pkg/config"
+	"github.com/kaiiorg/page-watcher/pkg/repositories/page_repository"
 	"github.com/rs/zerolog/log"
+	"html/template"
 )
 
 var (
@@ -38,7 +33,15 @@ func NewWebDiffPreviewer(c *config.Web, pageRepository page_repository.PageRepos
 		gin:            gin.New(),
 	}
 
-	templ, err := template.ParseFS(templatesFS, "templates/*.gohtml")
+	t := template.New("page-watcher")
+	t.Funcs(template.FuncMap{
+		"replaceEndLines": w.replaceEndLines,
+		"isInsert":        w.isInsert,
+		"isDel":           w.isDel,
+		"isEqual":         w.isEqual,
+	})
+
+	templ, err := t.ParseFS(templatesFS, "templates/*.gohtml")
 	if err != nil {
 		return nil, err
 	}
@@ -63,69 +66,4 @@ func (w *WebDiffPreviewer) Run() {
 		err := w.gin.Run(fmt.Sprintf(":%d", w.config.Port))
 		log.Warn().Err(err).Msg("API has stopped")
 	}()
-}
-
-func (w *WebDiffPreviewer) log(loggerParams gin.LogFormatterParams) string {
-	log.Info().
-		Str("clientIP", loggerParams.ClientIP).
-		Str("method", loggerParams.Method).
-		Str("path", loggerParams.Path).
-		Int("status", loggerParams.StatusCode).
-		Str("latency", loggerParams.Latency.String()).
-		Msg(loggerParams.ErrorMessage)
-	return ""
-}
-
-func (w *WebDiffPreviewer) noRoute(c *gin.Context) {
-	c.Redirect(http.StatusMovedPermanently, "/")
-}
-
-func (w *WebDiffPreviewer) index(c *gin.Context) {
-	pages, err := w.pageRepository.GetDistinctPages()
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	pageMap := map[string]string{}
-	for _, page := range pages {
-		pageMap[base64.StdEncoding.EncodeToString([]byte(page))] = page
-	}
-
-	c.HTML(http.StatusOK, "index.gohtml", gin.H{"pages": pageMap})
-}
-
-func (w *WebDiffPreviewer) latestChange(c *gin.Context) {
-	base64Name := c.Param("base64Name")
-	name, err := base64.StdEncoding.DecodeString(base64Name)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	latestChange, err := w.pageRepository.GetLatestChange(string(name))
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	diff, err := latestChange.DecodeDiff()
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.HTML(
-		http.StatusOK,
-		"change.gohtml",
-		gin.H{
-			"page":  latestChange,
-			"lines": strings.Split(latestChange.Text, "\n"),
-			"diff":  diff,
-		},
-	)
-}
-
-func (w *WebDiffPreviewer) specificChange(c *gin.Context) {
-
 }

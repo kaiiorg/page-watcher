@@ -18,16 +18,16 @@ func New() *PageNormalizer {
 	return &PageNormalizer{}
 }
 
-func (pn *PageNormalizer) Get(page *config.Page) (string, error) {
+func (pn *PageNormalizer) Get(page *config.Page) (string, string, error) {
 	resp, err := soup.Get(page.Url)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	doc := soup.HTMLParse(resp)
 	content := doc.Find(page.Find...)
 	if content.Error != nil {
-		return "", content.Error
+		return "", "", content.Error
 	}
 
 	// Run user defined normalization regexp
@@ -37,7 +37,7 @@ func (pn *PageNormalizer) Get(page *config.Page) (string, error) {
 		pn.debug(page.Name, resp, normalized)
 	}
 
-	return normalized, nil
+	return content.FullText(), normalized, nil
 }
 
 func (pn *PageNormalizer) debug(name, raw, normalized string) {

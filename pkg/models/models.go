@@ -13,9 +13,10 @@ type Page struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	Name string
-	Text string
-	Diff []byte
+	Name           string
+	NormalizedText string
+	RawText        string
+	Diff           []byte
 }
 
 func (p *Page) EncodeDiff(diff []diffmatchpatch.Diff) error {

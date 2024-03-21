@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/rs/zerolog/log"
 	"regexp"
 	"time"
 )
@@ -64,6 +65,7 @@ func (p *Page) ValidateNormalize() error {
 // NormalizeString will run the regex defined in Page.Normalize
 func (p *Page) NormalizeString(s string) string {
 	for r, to := range p.normalizeRegex {
+		log.Debug().Str("configKey", r.String()).Msg("Running configured normalize regex")
 		s = r.ReplaceAllString(s, to)
 	}
 	return s

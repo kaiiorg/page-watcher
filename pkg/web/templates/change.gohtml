@@ -16,7 +16,23 @@
 
 <h2>Diff</h2>
 <p>
-  {{.diff}}
+    {{range .diff}}
+      {{if isEqual .}}
+        <span>
+          {{.Text | replaceEndLines}}
+        </span>
+      {{end}}
+      {{if isDel .}}
+        <del class="diff-del">
+          {{.Text | replaceEndLines}}
+        </del>
+      {{end}}
+      {{if isInsert .}}
+        <ins class="diff-ins">
+          {{.Text | replaceEndLines}}
+        </ins>
+      {{end}}
+    {{end}}
 </p>
 
 </body>

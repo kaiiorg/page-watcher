@@ -83,7 +83,7 @@ func (w *Watcher) watchPage(page *config.Page) {
 }
 
 func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
-	normalizedPage, err := w.normalizer.Get(page)
+	rawPage, normalizedPage, err := w.normalizer.Get(page)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get and normalize page")
 	}
@@ -96,8 +96,9 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 			log.Info().Msg("Didn't find an existing page to compare against; attempting to add it")
 
 			dbPage := &models.Page{
-				Name: page.Name,
-				Text: normalizedPage,
+				Name:           page.Name,
+				NormalizedText: normalizedPage,
+				RawText:        rawPage,
 			}
 			err = w.pageRepository.SaveChange(dbPage)
 			if err == nil {
@@ -110,7 +111,7 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 	}
 
 	// Determine if there are differences and format it into a human-readable diff if soo
-	diff, isDiff := w.diff(normalizedPage, dbPage.Text, page, log)
+	diff, isDiff := w.diff(normalizedPage, dbPage.NormalizedText, page, log)
 
 	// If the page is not different, stop now
 	if !isDiff {
@@ -120,8 +121,9 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 
 	// If the page is different, add it to the database
 	newDbPage := &models.Page{
-		Name: dbPage.Name,
-		Text: normalizedPage,
+		Name:           dbPage.Name,
+		NormalizedText: normalizedPage,
+		RawText:        rawPage,
 	}
 	err = newDbPage.EncodeDiff(diff)
 	if err != nil {
@@ -142,7 +144,8 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 func (w *Watcher) diff(newPage, currentPage string, pageConfig *config.Page, log zerolog.Logger) ([]diffmatchpatch.Diff, bool) {
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(newPage, currentPage, false)
-	if len(diffs) == 0 {
+	log.Debug().Str("page", pageConfig.Name).Int("diffCount", len(diffs)).Send()
+	if len(diffs) == 1 {
 		return nil, false
 	}
 	return diffs, true
