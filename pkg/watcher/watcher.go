@@ -69,6 +69,8 @@ func (w *Watcher) watchPage(page *config.Page) {
 	ticker := time.NewTicker(every)
 	log := log.With().Str("page", page.Name).Str("every", every.String()).Logger()
 	log.Info().Msg("Watching")
+	log.Info().Msg("Initial check")
+	w.check(page, log)
 
 	for {
 		select {
@@ -82,44 +84,44 @@ func (w *Watcher) watchPage(page *config.Page) {
 	}
 }
 
-func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
-	rawPage, normalizedPage, err := w.normalizer.Get(page)
+func (w *Watcher) check(pageConfig *config.Page, log zerolog.Logger) {
+	rawPage, normalizedPage, err := w.normalizer.Get(pageConfig)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to get and normalize page")
+		log.Error().Err(err).Msg("Failed to get and normalize pageConfig")
 	}
 
-	log.Info().Int("length", len(normalizedPage)).Msg("Got and normalized page")
-	dbPage, err := w.pageRepository.GetLatestChange(page.Name)
+	log.Info().Int("length", len(normalizedPage)).Msg("Got and normalized pageConfig")
+	dbPage, err := w.pageRepository.GetLatestChange(pageConfig.Name)
 	if err != nil {
-		// If we didn't find a record for this page, add it
+		// If we didn't find a record for this pageConfig, add it
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Info().Msg("Didn't find an existing page to compare against; attempting to add it")
+			log.Info().Msg("Didn't find an existing pageConfig to compare against; attempting to add it")
 
 			dbPage := &models.Page{
-				Name:           page.Name,
+				Name:           pageConfig.Name,
 				NormalizedText: normalizedPage,
 				RawText:        rawPage,
 			}
 			err = w.pageRepository.SaveChange(dbPage)
 			if err == nil {
-				log.Info().Msg("Successfully added the new page")
+				log.Info().Msg("Successfully added the new pageConfig")
 			} else {
-				log.Error().Err(err).Msg("Failed to add the new page")
+				log.Error().Err(err).Msg("Failed to add the new pageConfig")
 			}
 			return
 		}
 	}
 
 	// Determine if there are differences and format it into a human-readable diff if soo
-	diff, isDiff := w.diff(normalizedPage, dbPage.NormalizedText, page, log)
+	diff, isDiff := w.diff(normalizedPage, dbPage.NormalizedText, pageConfig, log)
 
-	// If the page is not different, stop now
+	// If the pageConfig is not different, stop now
 	if !isDiff {
 		log.Info().Msg("No differences found!")
 		return
 	}
 
-	// If the page is different, add it to the database
+	// If the pageConfig is different, add it to the database
 	newDbPage := &models.Page{
 		Name:           dbPage.Name,
 		NormalizedText: normalizedPage,

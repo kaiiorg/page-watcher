@@ -2,7 +2,6 @@ package web
 
 import (
 	"encoding/base64"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
 
@@ -13,10 +12,14 @@ func (w *WebDiffPreviewer) noRoute(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "/")
 }
 
+func (w *WebDiffPreviewer) error(c *gin.Context, err error) {
+	c.HTML(http.StatusOK, "error.gohtml", gin.H{"error": err.Error()})
+}
+
 func (w *WebDiffPreviewer) index(c *gin.Context) {
 	pages, err := w.pageRepository.GetDistinctPages()
 	if err != nil {
-		c.Error(err)
+		w.error(c, err)
 		return
 	}
 
@@ -32,23 +35,21 @@ func (w *WebDiffPreviewer) latestChange(c *gin.Context) {
 	base64Name := c.Param("base64Name")
 	name, err := base64.StdEncoding.DecodeString(base64Name)
 	if err != nil {
-		c.Error(err)
+		w.error(c, err)
 		return
 	}
 
 	latestChange, err := w.pageRepository.GetLatestChange(string(name))
 	if err != nil {
-		c.Error(err)
+		w.error(c, err)
 		return
 	}
 
 	diff, err := latestChange.DecodeDiff()
 	if err != nil {
-		c.Error(err)
+		w.error(c, err)
 		return
 	}
-
-	log.Info().Int("diffcount", len(diff)).Send()
 
 	c.HTML(
 		http.StatusOK,
