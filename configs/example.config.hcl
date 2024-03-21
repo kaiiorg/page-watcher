@@ -5,13 +5,20 @@ page {
 
   find = ["main", "class", "main-wrap"]
 
-  normalize = {
+  normalize {
     // Consecutive spaces to single space
-    "[[:blank:]]+" = " "
+    regex = " +"
+    to = " "
+  }
+  normalize {
     // Consecutive NBSP to single space
-    " +" = " "
+    regex = "[[:blank:]]+"
+    to = " "
+  }
+  normalize {
     // Blank lines to empty line
-    "[[:blank:]]+\n" = ""
+    regex = "[[:blank:]]+\n"
+    to = ""
   }
 
   debug = false

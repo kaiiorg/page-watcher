@@ -22,11 +22,11 @@ type Page struct {
 	// Find is a string slice for the arguments to soup's Root.Find(). See https://pkg.go.dev/github.com/anaskhan96/soup#Root.Find
 	Find []string `hcl:"find"`
 
-	// Normalize is a map of regular expression strings to a string that will replace anything that matches
+	// Normalize is list of structs that define how to normalize the page contents for diff
 	// Hint: use https://regex101.com/ or something similar, select Golang flavor
-	Normalize map[string]string `hcl:"normalize,optional"`
-	// normalizeRegex is the compiled regexps defined in Normalize
-	normalizeRegex map[*regexp.Regexp]string
+	// Dev note: this cannot be a map because the order of the key/value during the normalization execution can't be
+	// enforced! Using a slice of Normalize struct allows them to be executed in the order they're defined in the file
+	Normalize []*Normalize `hcl:"normalize,block"`
 
 	// Debug will write the page to files to help with configuration
 	Debug bool `hcl:"debug,optional"`
@@ -47,26 +47,22 @@ func (p *Page) EveryDuration() time.Duration {
 
 // ValidateNormalize attempts to compile the configured regex map to a valid regex
 func (p *Page) ValidateNormalize() error {
-	rMap := map[*regexp.Regexp]string{}
-
-	for expr, to := range p.Normalize {
-		r, err := regexp.Compile(expr)
+	for _, n := range p.Normalize {
+		r, err := regexp.Compile(n.Regex)
 		if err != nil {
 			return err
 		}
-		rMap[r] = to
+		n.r = r
 	}
-
-	p.normalizeRegex = rMap
 
 	return nil
 }
 
 // NormalizeString will run the regex defined in Page.Normalize
 func (p *Page) NormalizeString(s string) string {
-	for r, to := range p.normalizeRegex {
-		log.Debug().Str("configKey", r.String()).Msg("Running configured normalize regex")
-		s = r.ReplaceAllString(s, to)
+	for _, n := range p.Normalize {
+		log.Debug().Str("configKey", n.Regex).Msg("Running configured normalize regex")
+		s = n.r.ReplaceAllString(s, n.To)
 	}
 	return s
 }
