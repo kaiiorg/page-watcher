@@ -10,6 +10,7 @@ import (
 	"github.com/kaiiorg/page-watcher/pkg/models"
 	"github.com/kaiiorg/page-watcher/pkg/repositories/page_repository"
 	"github.com/kaiiorg/page-watcher/pkg/watcher/normalizer"
+	"github.com/kaiiorg/page-watcher/pkg/web"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -25,6 +26,7 @@ type Watcher struct {
 
 	normalizer     normalizer.Normalizer
 	pageRepository page_repository.PageRepository
+	web            web.Web
 }
 
 func New(config *config.Config) (*Watcher, error) {
@@ -39,6 +41,10 @@ func New(config *config.Config) (*Watcher, error) {
 		pageRepository: pageRepository,
 	}
 	w.ctx, w.ctxCancel = context.WithCancel(context.Background())
+	w.web, err = web.NewWebDiffPreviewer(config.Web, w.pageRepository)
+	if err != nil {
+		return nil, err
+	}
 
 	return w, nil
 }
@@ -49,6 +55,8 @@ func (w *Watcher) Close() {
 }
 
 func (w *Watcher) Watch() {
+	w.web.Run()
+
 	for _, page := range w.config.Pages {
 		w.wg.Add(1)
 		go w.watchPage(page)
@@ -114,7 +122,11 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 	newDbPage := &models.Page{
 		Name: dbPage.Name,
 		Text: normalizedPage,
-		Diff: diff,
+	}
+	err = newDbPage.EncodeDiff(diff)
+	if err != nil {
+		log.Error().Err(err).Msg("A difference was found, but failed to encode the diffs before trying to save it to the database")
+		return
 	}
 	err = w.pageRepository.SaveChange(newDbPage)
 	if err != nil {
@@ -127,8 +139,11 @@ func (w *Watcher) check(page *config.Page, log zerolog.Logger) {
 	log.Warn().Msg("Differences were found, but notifications are currently unsupported")
 }
 
-func (w *Watcher) diff(newPage, currentPage string, pageConfig *config.Page, log zerolog.Logger) (string, bool) {
+func (w *Watcher) diff(newPage, currentPage string, pageConfig *config.Page, log zerolog.Logger) ([]diffmatchpatch.Diff, bool) {
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(newPage, currentPage, false)
-	return dmp.DiffPrettyHtml(diffs), true
+	if len(diffs) == 0 {
+		return nil, false
+	}
+	return diffs, true
 }

@@ -1,0 +1,28 @@
+<head>
+  <link rel="stylesheet" type="text/css" href="/styles.css" />
+</head>
+<body>
+<h1>Page Change Watcher</h1>
+
+  {{if .pages}}
+    <h2>Stored Page Changes</h2>
+    <table>
+      <thead>
+      <tr>
+        <th>Configured Page Name</th>
+      </tr>
+      </thead>
+      <tbody>
+      {{range $key, $value := .pages}}
+        <tr>
+          <td>
+            <a href="/changes/{{$key}}">{{$value}}</a>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p>Did not find any pages in the database!</p>
+  {{end}}
+</body>

@@ -53,6 +53,21 @@ func NewSqlitePageRepository(dbConfig *config.DB) (*SqlitePageRepository, error)
 	return spr, nil
 }
 
+func (spr *SqlitePageRepository) GetDistinctPages() ([]string, error) {
+	pages := []string{}
+
+	err := spr.db.
+		Model(&models.Page{}).
+		Distinct("name").
+		Pluck("name", &pages).
+		Error
+	if err != nil {
+		return nil, err
+	}
+
+	return pages, nil
+}
+
 func (spr *SqlitePageRepository) GetLatestChange(name string) (*models.Page, error) {
 	dbPage := &models.Page{}
 	err := spr.db.Where("name = ?", name).Last(dbPage).Error

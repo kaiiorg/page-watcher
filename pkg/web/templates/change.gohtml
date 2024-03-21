@@ -1,0 +1,22 @@
+<head>
+  <link rel="stylesheet" type="text/css" href="/styles.css" />
+</head>
+<body>
+<h1>Change For {{.page.Name}}</h1>
+<p>
+  Changed at {{.page.CreatedAt}}
+</p>
+
+<h2>New Value (Normalized)</h2>
+<p>
+  {{range .lines}}
+    {{.}} <br>
+  {{end}}
+</p>
+
+<h2>Diff</h2>
+<p>
+  {{.diff}}
+</p>
+
+</body>

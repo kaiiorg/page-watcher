@@ -6,6 +6,7 @@ import (
 
 type Config struct {
 	DB    *DB     `hcl:"db,block"`
+	Web   *Web    `hcl:"web,block"`
 	Pages []*Page `hcl:"page,block"`
 }
 
@@ -29,6 +30,10 @@ func LoadFromFile(filepath string) (*Config, error) {
 func (c *Config) Validate() error {
 	if c.DB == nil {
 		c.DB = defaultDb()
+	}
+
+	if c.Web == nil {
+		c.Web = defaultWeb()
 	}
 
 	for _, p := range c.Pages {
