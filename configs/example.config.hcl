@@ -1,9 +1,9 @@
 page {
-  name  = "Kaiiorg home page"
-  url   = "https://kaiiorg.wtf/"
+  name  = "page-watcher demo page"
+  url   = "http://localhost:8080/demo"
   every = "30s"
 
-  find = ["main", "class", "main-wrap"]
+  find = ["p", "id", "target"]
 
   normalize {
     // Consecutive NBSP to single space

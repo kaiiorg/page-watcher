@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+    <title>Demo Page</title>
+  </head>
+  <body data-bs-theme="dark">
+    <h1>Demo Page</h1>
+    <p>This page is used for a simple demo and testing</p>
+
+    <h2>Target</h2>
+    <p>The content defined in the paragraph below is the target for this demo.</p>
+    <p id="target">{{.content}}</p>
+
+    <h2>Change Target contents</h2>
+    <form action="demo/change" method="post">
+      <label for="content">New Content:</label> <br>
+      <input type="text" id="content" name="content">
+
+      <input type="submit" value="Submit">
+    </form>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

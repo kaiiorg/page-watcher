@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kaiiorg/page-watcher/pkg/config"
 	"github.com/kaiiorg/page-watcher/pkg/repositories/page_repository"
 	"github.com/rs/zerolog/log"
@@ -23,6 +24,8 @@ type WebDiffPreviewer struct {
 	pageRepository page_repository.PageRepository
 
 	gin *gin.Engine
+
+	demoContent string
 }
 
 func NewWebDiffPreviewer(c *config.Web, pageRepository page_repository.PageRepository) (*WebDiffPreviewer, error) {
@@ -31,6 +34,7 @@ func NewWebDiffPreviewer(c *config.Web, pageRepository page_repository.PageRepos
 		config:         c,
 		pageRepository: pageRepository,
 		gin:            gin.New(),
+		demoContent:    uuid.NewString(),
 	}
 
 	t := template.New("page-watcher")
@@ -58,6 +62,8 @@ func (w *WebDiffPreviewer) Run() {
 	w.gin.GET("/", w.index)
 	w.gin.GET("/changes/:base64Name", w.latestChange)
 	w.gin.GET("/changes/:base64Name/:pageChange", w.specificChange)
+	w.gin.GET("/demo", w.demo)
+	w.gin.POST("/demo/change", w.demoChange)
 
 	w.gin.NoRoute(w.noRoute)
 	w.gin.Use(static.Serve("/", static.EmbedFolder(staticFS, "static")))
